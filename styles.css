@@ -32,7 +32,7 @@
 
 #summator-tool-window {
   position: fixed !important;
-  top: 20px !important;
+  bottom: 20px !important;  /* Changed from top to bottom */
   right: 20px !important;
   width: 300px !important;
   background: white !important;
@@ -44,6 +44,12 @@
   font-family: Arial, sans-serif !important;
   box-sizing: border-box !important;
   margin: 0 !important;
+  color: black !important;  /* Force black text */
+}
+
+/* Ensure all text elements inside the collector are black */
+#summator-tool-window * {
+  color: black !important;
 }
 
 /* Make sure other styles don't override visibility */
@@ -56,10 +62,10 @@
 }
 
 #summator-tool-window h3 {
-  margin: 0 0 10px 0 !important;
-  padding: 0 !important;
-  font-size: 16px !important;
   color: black !important;
+  margin: 0 0 10px 0 !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
 }
 
 .summator-list-container {
@@ -116,20 +122,24 @@
 
 /* Style for the main action buttons (Summarize, Show All, Clear All) */
 #summator-tool-window .summator-btn {
-  background-color: #007ACC !important;  /* VS Code blue */
-  border: 1px solid #005999 !important;
-  color: white !important;
+  background-color: #4CAF50 !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  margin: 0 5px !important;
 }
 
 #summator-tool-window .summator-btn:hover {
-  background-color: #005999 !important;
+  background-color: #45a049 !important;
 }
 
 .summator-remove-btn {
   padding: 2px 6px !important;
   margin-left: 8px !important;
-  background-color: red !important;
-  border: 1px solid #cc0000 !important;
+  background-color: #f44336 !important;
+  border: none !important;
+  border-radius: 4px !important;
   cursor: pointer !important;
   font-size: 12px !important;
   color: white !important;
@@ -140,7 +150,7 @@
 }
 
 .summator-remove-btn:hover {
-  background-color: darkred !important; /* Darker red on hover */
+  background-color: #da190b !important; /* Darker red on hover */
 }
 
 .summator-modal {

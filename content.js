@@ -4,6 +4,10 @@ let toolWindow = null;
 let isToolWindowVisible = true; // Default to true
 const currentDomain = window.location.hostname;
 
+// Add this at the top with other variables
+let lastDoubleClickTime = 0;
+const DOUBLE_CLICK_DELAY = 300; // milliseconds
+
 // Function to load visibility state for current domain
 function loadVisibilityState() {
   return new Promise((resolve) => {
@@ -170,6 +174,13 @@ async function selectElementText(element) {
 
 // Finally add the event listener
 document.addEventListener('dblclick', async (event) => {
+  // Prevent double processing
+  const now = Date.now();
+  if (now - lastDoubleClickTime < DOUBLE_CLICK_DELAY) {
+    return;
+  }
+  lastDoubleClickTime = now;
+
   if (event.button !== 0) {
     return;
   }
@@ -314,21 +325,28 @@ function collectTableText(table) {
   return text;
 }
 
-function addToCollection(text, element) {
-  if (text && text.length >= 14 && !isWithinExtensionUI(element)) {
+function addToCollection(text, element, position = null) {
+  // Skip UI check if element is null (from iframe)
+  if (element && isWithinExtensionUI(element)) {
+    return;
+  }
+
+  if (text && text.length >= 14) {
     const url = window.location.href;
     const domain = window.location.hostname;
-    const position = getElementPosition(element);
+    
+    // Use provided position or get it from element
+    const finalPosition = position || (element ? getElementPosition(element) : { x: 0, y: 0 });
+
     chrome.runtime.sendMessage({
       action: "addText", 
       data: {
         text: text,
         url: url,
         domain: domain,
-        position: position
+        position: finalPosition
       }
     }, function(response) {
-      // Only update with items from current domain
       if (response && response.items) {
         if (window.top === window.self) {
           updateToolWindow(response.items.filter(item => item.domain === domain));
@@ -490,8 +508,10 @@ if (window.top === window.self) {
 console.log("Content script loaded");
 
 function isWithinExtensionUI(element) {
-  return element.closest('#summator-tool-window') !== null || 
-         element.closest('.summator-modal') !== null;
+  if (!element || !element.closest) {
+    return false;
+  }
+  return element.closest('#summator-tool-window') !== null;
 }
 
 // Add this function to create and show notifications
@@ -666,3 +686,84 @@ document.addEventListener('DOMContentLoaded', async function() {
     toolWindow = createToolWindow();
   }
 });
+
+// Add this function to handle iframe messages
+function sendMessageToParent(message) {
+  try {
+    window.top.postMessage({
+      type: 'summator-iframe-event',
+      data: message
+    }, '*');
+  } catch (e) {
+    console.error('Failed to send message to parent:', e);
+  }
+}
+
+// Update the double-click event listener
+document.addEventListener('dblclick', async (event) => {
+  // Prevent double processing
+  const now = Date.now();
+  if (now - lastDoubleClickTime < DOUBLE_CLICK_DELAY) {
+    return;
+  }
+  lastDoubleClickTime = now;
+
+  if (event.button !== 0) {
+    return;
+  }
+
+  const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
+  let target = event.target;
+
+  if (target.closest('a') !== null) {
+    console.log("Double-click on a link element, not collecting text");
+    return;
+  }
+
+  while (target && !textTags.includes(target.tagName)) {
+    target = target.parentElement;
+  }
+
+  if (target && !isWithinExtensionUI(target)) {
+    console.log("Double-click event captured on text-containing element");
+    await selectElementText(target);
+  }
+}, true);
+
+// Add message listener in the main window
+if (window.top === window.self) {
+  window.addEventListener('message', async (event) => {
+    if (event.data && event.data.type === 'summator-iframe-event') {
+      const message = event.data.data;
+      if (message.action === 'selectText') {
+        // Don't pass fake element object, just pass null since we know it's not within UI
+        addToCollection(message.text, null, message.position);
+      }
+    }
+  }, false);
+}
+
+// Update getElementPosition to handle iframes
+function getElementPosition(element) {
+  const rect = element.getBoundingClientRect();
+  let x = rect.left;
+  let y = rect.top;
+
+  // Add iframe offset if we're in an iframe
+  if (window !== window.top) {
+    try {
+      let frame = window.frameElement;
+      while (frame) {
+        const frameRect = frame.getBoundingClientRect();
+        x += frameRect.left;
+        y += frameRect.top;
+        frame = frame.ownerDocument.defaultView.frameElement;
+      }
+    } catch (e) {
+      console.error('Failed to calculate iframe position:', e);
+    }
+  }
+
+  return { x, y };
+}
+
