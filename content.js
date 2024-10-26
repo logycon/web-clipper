@@ -5,15 +5,18 @@ let toolWindow = null;
 // Load saved texts when the script starts
 chrome.runtime.sendMessage({
   action: "getTexts",
-  url: window.location.href  // Send current URL
+  url: window.location.href,
+  domain: window.location.hostname  // Add domain
 }, function(response) {
-  if (response && response.items) {
+  if (response && response.items) {  // Only check for items
     if (window.top === window.self) {
-      // Items will already be filtered in background.js
       updateToolWindow(response.items);
     }
   } else {
-    console.error("Failed to get collected texts");
+    console.log("No items found or error loading items");
+    if (window.top === window.self) {
+      updateToolWindow([]); // Pass empty array to show "No items collected" message
+    }
   }
 });
 
@@ -145,25 +148,40 @@ function selectElementText(element) {
     }
     
     if (elem.nodeType === Node.ELEMENT_NODE) {
-      // Check if the element is visible
+      // Check if element is visible
       if (window.getComputedStyle(elem).display === 'none') {
         return '';
       }
 
       let text = '';
       
-      // Special handling for tables
+      // Handle images
+      if (elem.tagName === 'IMG') {
+        try {
+          // Create a canvas to convert image to base64
+          const canvas = document.createElement('canvas');
+          canvas.width = elem.naturalWidth;
+          canvas.height = elem.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(elem, 0, 0);
+          const base64 = canvas.toDataURL('image/png');
+          return `\n[IMAGE:${base64}]\n`;
+        } catch (e) {
+          console.error('Failed to convert image to base64:', e);
+          return `\n[IMAGE:${elem.src}]\n`;
+        }
+      }
+
+      // Rest of the existing function...
       if (elem.tagName === 'TABLE') {
         return collectTableText(elem);
       }
       
-      // Special handling for list items
       if (elem.tagName === 'LI') {
         const listType = elem.parentElement.tagName === 'OL' ? 'ol' : 'ul';
         const listIndex = Array.from(elem.parentElement.children).indexOf(elem) + 1;
         text += '  '.repeat(depth) + (listType === 'ol' ? `${listIndex}. ` : '• ');
       } else if (textTags.includes(elem.tagName)) {
-        // Add newline before block-level elements, except for the first one
         if (depth > 0 && getComputedStyle(elem).display === 'block') {
           text += '\n' + '  '.repeat(depth);
         }
@@ -174,7 +192,6 @@ function selectElementText(element) {
         text += collectTextFromElement(child, depth + 1);
       }
 
-      // Add a newline after certain block elements
       if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE', 'PRE'].includes(elem.tagName)) {
         text += '\n';
       }
@@ -233,12 +250,14 @@ function selectElementText(element) {
 function addToCollection(text, element) {
   if (text && text.length >= 14 && !isWithinExtensionUI(element)) {
     const url = window.location.href;
+    const domain = window.location.hostname;
     const position = getElementPosition(element);
     chrome.runtime.sendMessage({
       action: "addText", 
       data: {
         text: text,
         url: url,
+        domain: domain,  // Add domain
         position: position
       }
     });
@@ -270,7 +289,7 @@ function updateToolWindow(items) {
   if (Array.isArray(items) && items.length > 0) {
     items.forEach((item, index) => {
       const listItem = document.createElement('li');
-      listItem.style.listStyleType = 'none'; // Remove default list styling
+      listItem.style.listStyleType = 'none';
       listItem.innerHTML = `
         <div style="display: flex; flex-direction: column; width: 100%;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -278,7 +297,7 @@ function updateToolWindow(items) {
             <button class="summator-remove-btn" data-index="${index}">×</button>
           </div>
           <a href="${item.url}" target="_blank" title="Position: (${Math.round(item.position.x)}, ${Math.round(item.position.y)})">
-            ${new URL(item.url).hostname}
+            ${item.domain}
           </a>
         </div>
       `;
@@ -303,7 +322,7 @@ function updateToolWindow(items) {
       listContainer.scrollTop = listContainer.scrollHeight; // Scroll to the bottom
     }, 0);
   } else {
-    listContainer.innerHTML = '<li>No items collected yet.</li>';
+    listContainer.innerHTML = '<li style="padding: 10px !important;">No items collected yet.</li>';
   }
 }
 
@@ -343,24 +362,30 @@ function summarizeCollectedText() {
 }
 
 function clearAllCollectedText() {
-  chrome.runtime.sendMessage({action: "clearAll"}, function(response) {
-    if (response.success) {
-      if (window.top === window.self) {
-        updateToolWindow([]);
-      }
+  chrome.runtime.sendMessage({
+    action: "clearAll"
+  }, function(response) {
+    // Don't check for success property
+    if (window.top === window.self) {
+      updateToolWindow([]);
     }
   });
 }
 
 function removeCollectedText(index) {
-  chrome.runtime.sendMessage({action: "removeText", index: index}, function(response) {
-    if (response.success) {
-      chrome.runtime.sendMessage({action: "getTexts"}, function(response) {
-        if (window.top === window.self) {
-          updateToolWindow(response.items);
-        }
-      });
-    }
+  chrome.runtime.sendMessage({
+    action: "removeText", 
+    index: index
+  }, function(response) {
+    // Don't check for success property
+    chrome.runtime.sendMessage({
+      action: "getTexts",
+      url: window.location.href
+    }, function(response) {
+      if (window.top === window.self && response && response.items) {
+        updateToolWindow(response.items);
+      }
+    });
   });
 }
 
@@ -397,30 +422,44 @@ function isWithinExtensionUI(element) {
 function showFullTextModal(text) {
   const modal = document.createElement('div');
   modal.className = 'summator-modal';
+  
+  // Convert text with image tags to HTML
+  const formattedContent = text.replace(/\[IMAGE:([^\]]+)\]/g, (match, base64) => {
+    if (base64.startsWith('data:image')) {
+      return `<img src="${base64}" style="max-width: 100%; height: auto; margin: 10px 0;">`;
+    }
+    return `<img src="${base64}" style="max-width: 100%; height: auto; margin: 10px 0;">`;
+  });
+
   modal.innerHTML = `
     <div class="summator-modal-content">
       <div class="summator-modal-header">
         <h2>Full Text</h2>
         <span class="summator-close-btn">×</span>
       </div>
-      <textarea class="summator-full-text" readonly></textarea>
+      <div class="summator-full-text">${formattedContent}</div>
     </div>
   `;
 
+  // Prevent background scroll when modal is open
+  document.body.style.overflow = 'hidden';
+
   document.body.appendChild(modal);
 
-  // Set the text content of the textarea
-  const textarea = modal.querySelector('.summator-full-text');
-  textarea.value = wrapLongLines(text, 80); // Wrap lines at 80 characters
+  // Prevent scroll propagation
+  modal.querySelector('.summator-full-text').addEventListener('wheel', (e) => {
+    e.stopPropagation();
+  });
 
   const closeBtn = modal.querySelector('.summator-close-btn');
   closeBtn.onclick = () => {
+    document.body.style.overflow = ''; // Restore scrolling
     document.body.removeChild(modal);
   };
 
-  // Close the modal if clicking outside the content
   modal.onclick = (event) => {
     if (event.target === modal) {
+      document.body.style.overflow = ''; // Restore scrolling
       document.body.removeChild(modal);
     }
   };
@@ -456,11 +495,12 @@ function escapeHTML(str) {
 function showAllCollectedText() {
   chrome.runtime.sendMessage({
     action: "getTexts",
-    url: window.location.href  // Add the current URL
+    url: window.location.href,  // Add the current URL
+    domain: window.location.hostname  // Add domain
   }, function(response) {
-    if (response.items && response.items.length > 0) {
+    if (response && response.items && response.items.length > 0) {
       const allText = response.items.map((item, index) => {
-        return `Entry ${index + 1} (${new URL(item.url).hostname}):\n\n${item.text}\n\n`;
+        return `Entry ${index + 1} (${item.domain}):\n\n${item.text}\n\n`;
       }).join('---\n\n');
       showFullTextModal(allText);
     } else {
@@ -468,4 +508,3 @@ function showAllCollectedText() {
     }
   });
 }
-
