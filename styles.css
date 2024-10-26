@@ -56,12 +56,30 @@
 }
 
 .summator-list-container {
-  list-style-type: none;
-  padding: 0;
-  margin: 0 0 10px 0;
-  max-height: 60vh; /* Set a maximum height for the list */
-  overflow-y: auto; /* Enable vertical scrolling */
-  padding: 10px; /* Optional: Add some padding */
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  margin: 10px 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  border: 1px solid #ccc !important;
+  scroll-behavior: smooth !important;
+}
+
+.summator-list-container::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.summator-list-container::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+.summator-list-container::-webkit-scrollbar-thumb {
+  background: #888 !important;
+  border-radius: 4px !important;
+}
+
+.summator-list-container::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
 }
 
 .summator-list-container li {
@@ -224,4 +242,98 @@
   color: black !important;
   resize: none !important;     /* Prevent textarea resizing */
   overflow-y: auto !important; /* Enable vertical scrolling */
+}
+
+.summator-modal-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.summator-copy-btn {
+  padding: 6px 12px !important;
+  background-color: #4CAF50 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  transition: background-color 0.2s !important;
+}
+
+.summator-copy-btn:hover {
+  background-color: #45a049 !important;
+}
+
+.summator-copy-btn:active {
+  background-color: #3d8b40 !important;
+}
+
+.summator-copy-message {
+  position: fixed !important;
+  bottom: 30px !important;
+  left: 50% !important;
+  transform: translate(-50%, 20px) !important;
+  background-color: #333 !important;
+  color: white !important;
+  padding: 12px 24px !important;
+  border-radius: 4px !important;
+  font-size: 14px !important;
+  opacity: 0 !important;
+  display: none !important;
+  transition: all 0.3s ease-in-out !important;
+  z-index: 2147483647 !important; /* Highest possible z-index */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  font-family: Arial, sans-serif !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+}
+
+.summator-notification {
+  position: fixed !important;
+  bottom: 30px !important;
+  left: 50% !important;
+  transform: translate(-50%, 20px) !important;
+  background-color: #333 !important;
+  color: white !important;
+  padding: 12px 24px !important;
+  border-radius: 4px !important;
+  font-size: 14px !important;
+  opacity: 0 !important;
+  transition: all 0.3s ease-in-out !important;
+  z-index: 2147483647 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  font-family: Arial, sans-serif !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+.summator-modal .summator-close-btn {
+  padding: 6px 12px !important;
+  background-color: #f44336 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  transition: background-color 0.2s !important;
+}
+
+.summator-modal .summator-close-btn:hover {
+  background-color: #da190b !important;
+}
+
+.summator-modal-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 15px !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+.summator-modal-header h2 {
+  margin: 0 !important;
+  font-size: 20px !important;
 }

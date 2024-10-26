@@ -17,22 +17,23 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getTexts") {
-    // Filter items by domain instead of URL
-    const currentDomain = request.domain;
-    const filteredItems = collectedItems.filter(item => {
-      try {
-        return item.domain === currentDomain;
-      } catch (e) {
-        console.error('Error filtering items:', e);
-        return false;
-      }
-    });
-    
-    sendResponse({ items: filteredItems });
+    try {
+      // Filter items for the current domain
+      const currentDomain = request.domain;
+      const filteredItems = collectedItems.filter(item => item.domain === currentDomain);
+      sendResponse({ items: filteredItems });
+    } catch (e) {
+      console.error('Error filtering items:', e);
+      sendResponse({ items: [] });
+    }
   } else if (request.action === "removeText") {
     collectedItems.splice(request.index, 1);
     saveCollectedItems();
-    sendResponse({ items: collectedItems });
+    
+    // Filter items for the current domain
+    const currentDomain = request.domain;
+    const filteredItems = collectedItems.filter(item => item.domain === currentDomain);
+    sendResponse({ items: filteredItems });
   } else if (request.action === "clearAll") {
     collectedItems = [];
     saveCollectedItems();
@@ -41,7 +42,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     collectedItems.push(request.data);
     saveCollectedItems();
     
-    // Filter items for the current domain before sending response
+    // Filter items for the current domain
     const currentDomain = request.data.domain;
     const filteredItems = collectedItems.filter(item => item.domain === currentDomain);
     sendResponse({ items: filteredItems });
@@ -54,20 +55,26 @@ function saveCollectedItems() {
     console.log('Collected items saved');
     chrome.tabs.query({}, function(tabs) {
       tabs.forEach(tab => {
-        // Get the domain of each tab
-        const tabUrl = new URL(tab.url);
-        const tabDomain = tabUrl.hostname;
-        
-        // Filter items for that tab's domain
-        const filteredItems = collectedItems.filter(item => item.domain === tabDomain);
-        
-        chrome.tabs.sendMessage(tab.id, {
-          action: "updateToolWindow", 
-          items: filteredItems
-        }).catch(err => {
-          // Handle error or ignore if tab doesn't have content script
-          console.log('Error sending message to tab:', err);
-        });
+        try {
+          // Only process tabs with valid URLs
+          if (tab.url && tab.url.startsWith('http')) {
+            const tabUrl = new URL(tab.url);
+            const tabDomain = tabUrl.hostname;
+            
+            // Filter items for that tab's domain
+            const filteredItems = collectedItems.filter(item => item.domain === tabDomain);
+            
+            chrome.tabs.sendMessage(tab.id, {
+              action: "updateToolWindow", 
+              items: filteredItems
+            }).catch(err => {
+              // Ignore errors for tabs that can't receive messages
+              console.log('Error sending message to tab:', err);
+            });
+          }
+        } catch (e) {
+          console.log('Invalid URL or chrome internal page:', tab.url);
+        }
       });
     });
   });

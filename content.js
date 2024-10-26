@@ -1,6 +1,163 @@
+const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
 let currentElement = null;
-let collectedTexts = [];
 let toolWindow = null;
+
+// Define collectTextFromElement first
+async function collectTextFromElement(elem, depth = 0) {
+  if (elem.nodeType === Node.TEXT_NODE) {
+    return elem.textContent.trim();
+  }
+  
+  if (elem.nodeType === Node.ELEMENT_NODE) {
+    if (window.getComputedStyle(elem).display === 'none') {
+      return '';
+    }
+
+    let text = '';
+    
+    if (elem.tagName === 'IMG') {
+      try {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              
+              let imageType = 'image/jpeg';
+              const srcLower = elem.src.toLowerCase();
+              if (srcLower.endsWith('.png')) {
+                imageType = 'image/png';
+              } else if (srcLower.endsWith('.gif')) {
+                imageType = 'image/gif';
+              } else if (srcLower.endsWith('.webp')) {
+                imageType = 'image/webp';
+              }
+              
+              try {
+                const base64 = canvas.toDataURL(imageType, 0.8);
+                resolve(`\n[IMAGE:${base64}]\n`);
+              } catch (e) {
+                console.error('Failed with detected type, trying JPEG:', e);
+                try {
+                  const jpegBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                  resolve(`\n[IMAGE:${jpegBase64}]\n`);
+                } catch (e2) {
+                  console.error('Failed with JPEG fallback:', e2);
+                  resolve(`\n[IMAGE:${elem.src}]\n`);
+                }
+              }
+            } catch (canvasError) {
+              console.error('Canvas operation failed:', canvasError);
+              resolve(`\n[IMAGE:${elem.src}]\n`);
+            }
+          };
+          
+          img.onerror = () => {
+            console.error('Failed to load image:', elem.src);
+            resolve(`\n[IMAGE:${elem.src}]\n`);
+          };
+          
+          img.src = elem.src;
+          
+          setTimeout(() => {
+            if (!img.complete) {
+              console.error('Image load timeout:', elem.src);
+              resolve(`\n[IMAGE:${elem.src}]\n`);
+            }
+          }, 5000);
+        });
+      } catch (e) {
+        console.error('Top level image handling error:', e);
+        return `\n[IMAGE:${elem.src}]\n`;
+      }
+    }
+
+    if (elem.tagName === 'TABLE') {
+      return collectTableText(elem);
+    }
+    
+    if (elem.tagName === 'LI') {
+      const listType = elem.parentElement.tagName === 'OL' ? 'ol' : 'ul';
+      const listIndex = Array.from(elem.parentElement.children).indexOf(elem) + 1;
+      text += '  '.repeat(depth) + (listType === 'ol' ? `${listIndex}. ` : '• ');
+    } else if (textTags.includes(elem.tagName)) {
+      if (depth > 0 && getComputedStyle(elem).display === 'block') {
+        text += '\n' + '  '.repeat(depth);
+      }
+    }
+
+    for (let child of elem.childNodes) {
+      const childText = await collectTextFromElement(child, depth + 1);
+      text += childText;
+    }
+
+    if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE', 'PRE'].includes(elem.tagName)) {
+      text += '\n';
+    }
+
+    return text;
+  }
+  
+  return '';
+}
+
+// Then define selectElementText
+async function selectElementText(element) {
+  if (isWithinExtensionUI(element)) {
+    return;
+  }
+
+  let collectedText = await collectTextFromElement(element);
+
+  collectedText = collectedText
+    .split('\n')
+    .map(line => line.trim())
+    .filter((line, index, array) => line !== '' || (line === '' && array[index - 1] !== ''))
+    .join('\n')
+    .trim();
+
+  if (collectedText && collectedText.length >= 14) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    addToCollection(collectedText, element);
+  } else if (collectedText && collectedText.length < 14) {
+    console.log("Text not collected: less than 14 characters long");
+  }
+}
+
+// Finally add the event listener
+document.addEventListener('dblclick', async (event) => {
+  if (event.button !== 0) {
+    return;
+  }
+
+  let target = event.target;
+
+  if (target.closest('a') !== null) {
+    console.log("Double-click on a link element, not collecting text");
+    return;
+  }
+
+  while (target && !textTags.includes(target.tagName)) {
+    target = target.parentElement;
+  }
+
+  if (target && !isWithinExtensionUI(target)) {
+    console.log("Double-click event captured on text-containing element");
+    await selectElementText(target);
+  }
+}, true);
 
 // Load saved texts when the script starts
 chrome.runtime.sendMessage({
@@ -42,30 +199,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
 });
-
-// Replace the click event listener with dblclick
-document.addEventListener('dblclick', async (event) => {
-  if (event.button !== 0) {
-    return;
-  }
-
-  const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
-  let target = event.target;
-
-  if (target.closest('a') !== null) {
-    console.log("Double-click on a link element, not collecting text");
-    return;
-  }
-
-  while (target && !textTags.includes(target.tagName)) {
-    target = target.parentElement;
-  }
-
-  if (target && !isWithinExtensionUI(target)) {
-    console.log("Double-click event captured on text-containing element");
-    await selectElementText(target);
-  }
-}, true);
 
 document.addEventListener('contextmenu', (event) => {
   console.log("Right-click event captured");
@@ -132,116 +265,21 @@ function highlightElement(element) {
   console.log("Text content of selected element:", text);
 }
 
-function selectElementText(element) {
-  if (isWithinExtensionUI(element)) {
-    return;  // Don't select text from our extension's UI
-  }
+function collectTableText(table) {
+  let text = '\n';
+  const rows = table.rows;
 
-  const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
-  
-  function collectTextFromElement(elem, depth = 0) {
-    if (elem.nodeType === Node.TEXT_NODE) {
-      return elem.textContent.trim();
+  // Iterate through each row
+  for (let i = 0; i < rows.length; i++) {
+    const cells = rows[i].cells;
+    // Iterate through each cell in the row
+    for (let j = 0; j < cells.length; j++) {
+      const cellText = cells[j].textContent.trim();
+      text += cellText + '\n\n'; // Add each cell's text followed by two newlines
     }
-    
-    if (elem.nodeType === Node.ELEMENT_NODE) {
-      // Check if element is visible
-      if (window.getComputedStyle(elem).display === 'none') {
-        return '';
-      }
-
-      let text = '';
-      
-      // Handle images
-      if (elem.tagName === 'IMG') {
-        try {
-          // Create a canvas to convert image to base64
-          const canvas = document.createElement('canvas');
-          canvas.width = elem.naturalWidth;
-          canvas.height = elem.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(elem, 0, 0);
-          const base64 = canvas.toDataURL('image/png');
-          return `\n[IMAGE:${base64}]\n`;
-        } catch (e) {
-          console.error('Failed to convert image to base64:', e);
-          return `\n[IMAGE:${elem.src}]\n`;
-        }
-      }
-
-      // Rest of the existing function...
-      if (elem.tagName === 'TABLE') {
-        return collectTableText(elem);
-      }
-      
-      if (elem.tagName === 'LI') {
-        const listType = elem.parentElement.tagName === 'OL' ? 'ol' : 'ul';
-        const listIndex = Array.from(elem.parentElement.children).indexOf(elem) + 1;
-        text += '  '.repeat(depth) + (listType === 'ol' ? `${listIndex}. ` : '• ');
-      } else if (textTags.includes(elem.tagName)) {
-        if (depth > 0 && getComputedStyle(elem).display === 'block') {
-          text += '\n' + '  '.repeat(depth);
-        }
-      }
-
-      // Collect text from child nodes
-      for (let child of elem.childNodes) {
-        text += collectTextFromElement(child, depth + 1);
-      }
-
-      if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE', 'PRE'].includes(elem.tagName)) {
-        text += '\n';
-      }
-
-      return text;
-    }
-    
-    return '';
   }
 
-  function collectTableText(table) {
-    let text = '\n';
-    const rows = table.rows;
-
-    // Iterate through each row
-    for (let i = 0; i < rows.length; i++) {
-      const cells = rows[i].cells;
-      // Iterate through each cell in the row
-      for (let j = 0; j < cells.length; j++) {
-        const cellText = cells[j].textContent.trim();
-        text += cellText + '\n\n'; // Add each cell's text followed by two newlines
-      }
-    }
-
-    return text;
-  }
-
-  // Collect the text content
-  let collectedText = collectTextFromElement(element);
-
-  // Trim blank lines and reduce multiple consecutive blank lines to a single one
-  collectedText = collectedText
-    .split('\n')
-    .map(line => line.trim())
-    .filter((line, index, array) => line !== '' || (line === '' && array[index - 1] !== ''))
-    .join('\n')
-    .trim();
-
-  if (collectedText && collectedText.length >= 14) {
-    // Create a range for the collected text
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    
-    // Select the range
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    // After selecting the text, add it to the collection
-    addToCollection(collectedText, element);
-  } else if (collectedText && collectedText.length < 14) {
-    console.log("Text not collected: less than 14 characters long");
-  }
+  return text;
 }
 
 function addToCollection(text, element) {
@@ -279,7 +317,7 @@ function getElementPosition(element) {
 }
 
 function updateToolWindow(items) {
-  if (window.top !== window.self) return; // Don't update tool window in iframes
+  if (window.top !== window.self) return;
 
   if (!toolWindow) {
     toolWindow = createToolWindow();
@@ -319,10 +357,10 @@ function updateToolWindow(items) {
       });
     });
 
-    // Scroll to the last added element
+    // Scroll to bottom after adding items
     setTimeout(() => {
-      listContainer.scrollTop = listContainer.scrollHeight; // Scroll to the bottom
-    }, 0);
+      listContainer.scrollTop = listContainer.scrollHeight;
+    }, 100);
   } else {
     listContainer.innerHTML = '<li style="padding: 10px !important;">No items collected yet.</li>';
   }
@@ -337,15 +375,13 @@ function createToolWindow() {
     <h3>Collector</h3>
     <ul class="summator-list-container"></ul>
     <div class="summator-button-container">
-      <button id="summator-summarize-btn" class="summator-btn">Summarize</button>
       <button id="summator-show-all-btn" class="summator-btn">Show All</button>
       <button id="summator-clear-btn" class="summator-btn">Clear All</button>
     </div>
   `;
   
-  // Add event listeners for buttons
+  // Add event listeners for buttons (removed summarize button listener)
   toolWindow.querySelector('#summator-show-all-btn').addEventListener('click', showAllCollectedText);
-  toolWindow.querySelector('#summator-summarize-btn').addEventListener('click', summarizeCollectedText);
   toolWindow.querySelector('#summator-clear-btn').addEventListener('click', clearAllCollectedText);
   
   document.body.appendChild(toolWindow);
@@ -375,19 +411,22 @@ function clearAllCollectedText() {
 }
 
 function removeCollectedText(index) {
+  const currentDomain = window.location.hostname;
   chrome.runtime.sendMessage({
     action: "removeText", 
-    index: index
+    index: index,
+    domain: currentDomain  // Add domain to the request
   }, function(response) {
-    // Don't check for success property
-    chrome.runtime.sendMessage({
-      action: "getTexts",
-      url: window.location.href
-    }, function(response) {
-      if (window.top === window.self && response && response.items) {
-        updateToolWindow(response.items);
+    if (response && response.items) {
+      // Filter items for current domain
+      const domainItems = response.items.filter(item => item.domain === currentDomain);
+      if (window.top === window.self) {
+        updateToolWindow(domainItems);
       }
-    });
+    } else {
+      // If no items, update with empty array
+      updateToolWindow([]);
+    }
   });
 }
 
@@ -421,11 +460,44 @@ function isWithinExtensionUI(element) {
          element.closest('.summator-modal') !== null;
 }
 
+// Add this function to create and show notifications
+function showNotification(message) {
+  // Remove any existing notification first
+  const existingNotification = document.querySelector('.summator-notification');
+  if (existingNotification) {
+    document.body.removeChild(existingNotification);
+  }
+
+  // Create new notification
+  const notification = document.createElement('div');
+  notification.className = 'summator-notification';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  // Force a reflow
+  notification.offsetHeight;
+
+  // Show notification
+  notification.style.opacity = '1';
+  notification.style.transform = 'translate(-50%, 0)';
+
+  // Hide and remove after delay
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translate(-50%, 20px)';
+    setTimeout(() => {
+      if (notification.parentElement) {
+        document.body.removeChild(notification);
+      }
+    }, 300);
+  }, 2000);
+}
+
+// Update the showFullTextModal function
 function showFullTextModal(text) {
   const modal = document.createElement('div');
   modal.className = 'summator-modal';
   
-  // Convert text with image tags to HTML
   const formattedContent = text.replace(/\[IMAGE:([^\]]+)\]/g, (match, base64) => {
     if (base64.startsWith('data:image')) {
       return `<img src="${base64}" style="max-width: 100%; height: auto; margin: 10px 0;">`;
@@ -437,7 +509,10 @@ function showFullTextModal(text) {
     <div class="summator-modal-content">
       <div class="summator-modal-header">
         <h2>Full Text</h2>
-        <span class="summator-close-btn">×</span>
+        <div class="summator-modal-controls">
+          <button class="summator-copy-btn">Copy</button>
+          <button class="summator-close-btn">×</button>
+        </div>
       </div>
       <div class="summator-full-text">${formattedContent}</div>
     </div>
@@ -445,26 +520,40 @@ function showFullTextModal(text) {
 
   // Prevent background scroll when modal is open
   document.body.style.overflow = 'hidden';
-
   document.body.appendChild(modal);
+
+  // Add copy functionality
+  const copyBtn = modal.querySelector('.summator-copy-btn');
+  copyBtn.addEventListener('click', async () => {
+    try {
+      const textToCopy = modal.querySelector('.summator-full-text').textContent;
+      await navigator.clipboard.writeText(textToCopy);
+      showNotification('Copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+      showNotification('Failed to copy text');
+    }
+  });
+
+  // Add close functionality
+  const closeBtn = modal.querySelector('.summator-close-btn');
+  closeBtn.addEventListener('click', () => {
+    document.body.style.overflow = ''; // Restore scrolling
+    document.body.removeChild(modal);
+  });
+
+  // Close on outside click
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      document.body.style.overflow = ''; // Restore scrolling
+      document.body.removeChild(modal);
+    }
+  });
 
   // Prevent scroll propagation
   modal.querySelector('.summator-full-text').addEventListener('wheel', (e) => {
     e.stopPropagation();
   });
-
-  const closeBtn = modal.querySelector('.summator-close-btn');
-  closeBtn.onclick = () => {
-    document.body.style.overflow = ''; // Restore scrolling
-    document.body.removeChild(modal);
-  };
-
-  modal.onclick = (event) => {
-    if (event.target === modal) {
-      document.body.style.overflow = ''; // Restore scrolling
-      document.body.removeChild(modal);
-    }
-  };
 }
 
 function wrapLongLines(text, maxLineLength) {
