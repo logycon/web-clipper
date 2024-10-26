@@ -43,9 +43,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Remove the contextmenu event listener and add a click event listener
-document.addEventListener('click', (event) => {
-  // Check if it's a left click (event.button === 0)
+// Replace the click event listener with dblclick
+document.addEventListener('dblclick', async (event) => {
   if (event.button !== 0) {
     return;
   }
@@ -53,20 +52,18 @@ document.addEventListener('click', (event) => {
   const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
   let target = event.target;
 
-  // Check if the clicked element or any of its ancestors is an <a> tag
   if (target.closest('a') !== null) {
-    console.log("Click on a link element, not collecting text");
+    console.log("Double-click on a link element, not collecting text");
     return;
   }
 
-  // Find the nearest ancestor that is a text-containing element
   while (target && !textTags.includes(target.tagName)) {
     target = target.parentElement;
   }
 
   if (target && !isWithinExtensionUI(target)) {
-    console.log("Click event captured on text-containing element");
-    selectElementText(target);
+    console.log("Double-click event captured on text-containing element");
+    await selectElementText(target);
   }
 }, true);
 
@@ -513,3 +510,4 @@ function showAllCollectedText() {
     }
   });
 }
+
