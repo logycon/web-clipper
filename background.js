@@ -29,7 +29,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     saveCollectedItems();
     sendResponse({success: true});
   } else if (request.action === "getTexts") {
-    sendResponse({items: collectedItems});
+    // Filter items for the current site
+    const currentHostname = new URL(request.url).hostname;
+    const filteredItems = collectedItems.filter(item => {
+      try {
+        return new URL(item.url).hostname === currentHostname;
+      } catch (e) {
+        return false;
+      }
+    });
+    sendResponse({items: filteredItems});
   }
   return true;
 });

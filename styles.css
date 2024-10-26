@@ -31,24 +31,28 @@
 }
 
 #summator-tool-window {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 300px;
-  max-height: 80vh;
-  background-color: bisque;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 10px;
-  z-index: 9999;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  overflow-y: auto;
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  width: 350px !important;
+  background-color: bisque !important;
+  border: 1px solid #ccc !important;
+  padding: 10px !important;
+  z-index: 9999 !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+  max-height: 80vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 14px !important;
+  color: black !important;
 }
 
 #summator-tool-window h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 18px;
+  margin: 0 0 10px 0 !important;
+  padding: 0 !important;
+  font-size: 16px !important;
+  color: black !important;
 }
 
 .summator-list-container {
@@ -75,62 +79,93 @@
   margin-right: 10px;
 }
 
+/* Default button style (for the remove/X button) */
 #summator-tool-window button {
-  margin-right: 10px;
-  padding: 5px 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
+  padding: 5px 10px !important;
+  border: 1px solid #cc0000 !important;
+  background-color: red !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  color: white !important;
 }
 
-#summator-tool-window button:hover {
-  background-color: #0056b3;
+/* Style for the main action buttons (Summarize, Show All, Clear All) */
+#summator-tool-window .summator-btn {
+  background-color: #007ACC !important;  /* VS Code blue */
+  border: 1px solid #005999 !important;
+  color: white !important;
+}
+
+#summator-tool-window .summator-btn:hover {
+  background-color: #005999 !important;
 }
 
 .summator-remove-btn {
-  background-color: #dc3545 !important;
-  font-size: 0.8em;
-  padding: 2px 5px !important;
+  padding: 2px 6px !important;
+  margin-left: 8px !important;
+  background-color: red !important;
+  border: 1px solid #cc0000 !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  color: white !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  flex-shrink: 0 !important;  /* Prevent button from shrinking */
 }
 
 .summator-remove-btn:hover {
-  background-color: #c82333 !important;
+  background-color: darkred !important; /* Darker red on hover */
 }
 
 .summator-modal {
-  display: flex;
-  position: fixed;
-  z-index: 10000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  justify-content: center;
-  align-items: center;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: rgba(0,0,0,0.5) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 10000 !important;
 }
 
 .summator-modal-content {
-  background-color: bisque; /* Set background color to bisque */
-  color: #000000;  /* Set text color to black */
-  padding: 20px;
-  border: 1px solid #888;
-  width: 80vw;  /* Set to 80% of viewport width */
-  height: 80vh; /* Set to 80% of viewport height */
-  overflow-y: auto;
-  position: relative;
-  border-radius: 5px;
-  font-family: Arial, sans-serif;
-  font-size: 14px; /* Default font size for content */
-  line-height: 1.6;
-  box-sizing: border-box;
+  background-color: bisque !important;
+  padding: 20px !important;
+  border-radius: 5px !important;
+  width: 80vw !important;
+  height: 80vh !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-.summator-modal-content h2 {
-  font-size: 16px; /* Adjust the title font size to be smaller */
-  margin: 0; /* Remove default margin */
+/* Add styles for the header container */
+.summator-modal-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.summator-modal h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.summator-modal .summator-close-btn {
+  cursor: pointer !important;
+  font-size: 20px !important;
+  color: #333 !important;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 2px 8px !important;
+}
+
+.summator-modal .summator-close-btn:hover {
+  color: black !important;
 }
 
 .summator-full-text {
@@ -171,4 +206,32 @@
   color: #000;
   text-decoration: none;
   cursor: pointer;
+}
+
+/* Make sure buttons have appropriate spacing */
+.summator-button-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;  /* Add some space between buttons */
+  margin-top: 10px;
+}
+
+/* Optional: Make buttons more compact if needed */
+.summator-button-container button {
+  padding: 5px 10px;
+}
+
+.summator-modal .summator-full-text {
+  width: 100% !important;
+  height: calc(100% - 60px) !important;  /* Full height minus space for header and padding */
+  margin-top: 20px !important;
+  padding: 10px !important;
+  box-sizing: border-box !important;
+  font-family: monospace !important;
+  font-size: 14px !important;
+  border: 1px solid #ccc !important;
+  background-color: white !important;
+  color: black !important;
+  resize: none !important;     /* Prevent textarea resizing */
+  overflow-y: auto !important; /* Enable vertical scrolling */
 }

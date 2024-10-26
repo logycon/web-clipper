@@ -3,9 +3,13 @@ let collectedTexts = [];
 let toolWindow = null;
 
 // Load saved texts when the script starts
-chrome.runtime.sendMessage({action: "getTexts"}, function(response) {
+chrome.runtime.sendMessage({
+  action: "getTexts",
+  url: window.location.href  // Send current URL
+}, function(response) {
   if (response && response.items) {
     if (window.top === window.self) {
+      // Items will already be filtered in background.js
       updateToolWindow(response.items);
     }
   } else {
@@ -268,14 +272,14 @@ function updateToolWindow(items) {
       const listItem = document.createElement('li');
       listItem.style.listStyleType = 'none'; // Remove default list styling
       listItem.innerHTML = `
-        <div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
-          <span class="summator-item-text">${index + 1}. ${item.text.substring(0, 50)}...</span>
-          <div style="display: flex; justify-content: space-between; width: 100%;">
-            <a href="${item.url}" target="_blank" title="Position: (${Math.round(item.position.x)}, ${Math.round(item.position.y)})">
-              ${new URL(item.url).hostname}
-            </a>
-            <button class="summator-remove-btn" data-index="${index}">Remove</button>
+        <div style="display: flex; flex-direction: column; width: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span class="summator-item-text">${index + 1}. ${item.text.substring(0, 50)}...</span>
+            <button class="summator-remove-btn" data-index="${index}">×</button>
           </div>
+          <a href="${item.url}" target="_blank" title="Position: (${Math.round(item.position.x)}, ${Math.round(item.position.y)})">
+            ${new URL(item.url).hostname}
+          </a>
         </div>
       `;
       listContainer.appendChild(listItem);
@@ -304,7 +308,7 @@ function updateToolWindow(items) {
 }
 
 function createToolWindow() {
-  if (window.top !== window.self) return null; // Don't create tool window in iframes
+  if (window.top !== window.self) return null;
 
   const toolWindow = document.createElement('div');
   toolWindow.id = 'summator-tool-window';
@@ -312,18 +316,18 @@ function createToolWindow() {
     <h3>Collector</h3>
     <ul class="summator-list-container"></ul>
     <div class="summator-button-container">
-      <button id="summator-summarize-btn">Summarize</button>
-      <button id="summator-show-all-btn">Show All</button>
-      <button id="summator-clear-btn">Clear All</button>
+      <button id="summator-summarize-btn" class="summator-btn">Summarize</button>
+      <button id="summator-show-all-btn" class="summator-btn">Show All</button>
+      <button id="summator-clear-btn" class="summator-btn">Clear All</button>
     </div>
   `;
   
+  // Add event listeners for buttons
+  toolWindow.querySelector('#summator-show-all-btn').addEventListener('click', showAllCollectedText);
+  toolWindow.querySelector('#summator-summarize-btn').addEventListener('click', summarizeCollectedText);
+  toolWindow.querySelector('#summator-clear-btn').addEventListener('click', clearAllCollectedText);
+  
   document.body.appendChild(toolWindow);
-  
-  document.getElementById('summator-summarize-btn').addEventListener('click', summarizeCollectedText);
-  document.getElementById('summator-show-all-btn').addEventListener('click', showAllCollectedText);
-  document.getElementById('summator-clear-btn').addEventListener('click', clearAllCollectedText);
-  
   return toolWindow;
 }
 
@@ -395,8 +399,10 @@ function showFullTextModal(text) {
   modal.className = 'summator-modal';
   modal.innerHTML = `
     <div class="summator-modal-content">
-      <span class="summator-close-btn">&times;</span>
-      <h2>Full Text</h2>
+      <div class="summator-modal-header">
+        <h2>Full Text</h2>
+        <span class="summator-close-btn">×</span>
+      </div>
       <textarea class="summator-full-text" readonly></textarea>
     </div>
   `;
@@ -448,7 +454,10 @@ function escapeHTML(str) {
 }
 
 function showAllCollectedText() {
-  chrome.runtime.sendMessage({action: "getTexts"}, function(response) {
+  chrome.runtime.sendMessage({
+    action: "getTexts",
+    url: window.location.href  // Add the current URL
+  }, function(response) {
     if (response.items && response.items.length > 0) {
       const allText = response.items.map((item, index) => {
         return `Entry ${index + 1} (${new URL(item.url).hostname}):\n\n${item.text}\n\n`;
