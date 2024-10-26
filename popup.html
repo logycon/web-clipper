@@ -2,10 +2,30 @@
 <html>
 <head>
   <title>Web Content Summarizer</title>
+  <style>
+    body {
+      width: 200px;
+      padding: 10px;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 4px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
   <h1>Web Content Summarizer</h1>
   <p>Select text on any webpage and use the context menu to summarize it.</p>
+  <button id="toggleCollector">Toggle Collector</button>
   <script src="popup.js"></script>
 </body>
 </html>

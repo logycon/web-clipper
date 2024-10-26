@@ -1,6 +1,38 @@
 const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
 let currentElement = null;
 let toolWindow = null;
+let isToolWindowVisible = true; // Default to true
+const currentDomain = window.location.hostname;
+
+// Function to load visibility state for current domain
+function loadVisibilityState() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['hiddenDomains'], function(result) {
+      const hiddenDomains = result.hiddenDomains || [];
+      isToolWindowVisible = !hiddenDomains.includes(currentDomain);
+      resolve(isToolWindowVisible);
+    });
+  });
+}
+
+// Function to save visibility state for current domain
+function saveVisibilityState() {
+  chrome.storage.local.get(['hiddenDomains'], function(result) {
+    let hiddenDomains = result.hiddenDomains || [];
+    
+    if (isToolWindowVisible) {
+      // Remove domain from hidden list
+      hiddenDomains = hiddenDomains.filter(domain => domain !== currentDomain);
+    } else {
+      // Add domain to hidden list if not already there
+      if (!hiddenDomains.includes(currentDomain)) {
+        hiddenDomains.push(currentDomain);
+      }
+    }
+    
+    chrome.storage.local.set({ hiddenDomains: hiddenDomains });
+  });
+}
 
 // Define collectTextFromElement first
 async function collectTextFromElement(elem, depth = 0) {
@@ -371,6 +403,9 @@ function createToolWindow() {
 
   const toolWindow = document.createElement('div');
   toolWindow.id = 'summator-tool-window';
+  // Initial visibility based on stored state
+  toolWindow.setAttribute('style', `display: ${isToolWindowVisible ? 'block' : 'none'} !important`);
+  
   toolWindow.innerHTML = `
     <h3>Collector</h3>
     <ul class="summator-list-container"></ul>
@@ -380,7 +415,6 @@ function createToolWindow() {
     </div>
   `;
   
-  // Add event listeners for buttons (removed summarize button listener)
   toolWindow.querySelector('#summator-show-all-btn').addEventListener('click', showAllCollectedText);
   toolWindow.querySelector('#summator-clear-btn').addEventListener('click', clearAllCollectedText);
   
@@ -600,3 +634,35 @@ function showAllCollectedText() {
   });
 }
 
+// Add toggle functionality
+function toggleToolWindow() {
+  if (!toolWindow) {
+    toolWindow = createToolWindow();
+  }
+  
+  isToolWindowVisible = !isToolWindowVisible;
+  if (isToolWindowVisible) {
+    toolWindow.setAttribute('style', 'display: block !important');
+  } else {
+    toolWindow.setAttribute('style', 'display: none !important');
+  }
+  
+  // Save the new state
+  saveVisibilityState();
+}
+
+// Add message listener for toggle
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "toggleCollector") {
+    toggleToolWindow();
+    sendResponse({ visible: isToolWindowVisible });
+  }
+});
+
+// Update your initialization code to not show the window immediately
+document.addEventListener('DOMContentLoaded', async function() {
+  if (window.top === window.self) {
+    await loadVisibilityState();
+    toolWindow = createToolWindow();
+  }
+});

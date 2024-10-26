@@ -5,8 +5,8 @@
   "description": "Summarize selected web content",
   "permissions": [
     "activeTab",
-    "contextMenus",
-    "storage"
+    "storage",
+    "contextMenus"
   ],
   "background": {
     "service_worker": "background.js",
