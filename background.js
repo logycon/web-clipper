@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     collectedItems.push(request.data);
     saveCollectedItems();
     
-    // Return only items for the current domain
+    // Filter items for the current domain before sending response
     const currentDomain = request.data.domain;
     const filteredItems = collectedItems.filter(item => item.domain === currentDomain);
     sendResponse({ items: filteredItems });
@@ -54,7 +54,20 @@ function saveCollectedItems() {
     console.log('Collected items saved');
     chrome.tabs.query({}, function(tabs) {
       tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, {action: "updateToolWindow", items: collectedItems});
+        // Get the domain of each tab
+        const tabUrl = new URL(tab.url);
+        const tabDomain = tabUrl.hostname;
+        
+        // Filter items for that tab's domain
+        const filteredItems = collectedItems.filter(item => item.domain === tabDomain);
+        
+        chrome.tabs.sendMessage(tab.id, {
+          action: "updateToolWindow", 
+          items: filteredItems
+        }).catch(err => {
+          // Handle error or ignore if tab doesn't have content script
+          console.log('Error sending message to tab:', err);
+        });
       });
     });
   });

@@ -257,12 +257,17 @@ function addToCollection(text, element) {
       data: {
         text: text,
         url: url,
-        domain: domain,  // Add domain
+        domain: domain,
         position: position
       }
+    }, function(response) {
+      // Only update with items from current domain
+      if (response && response.items) {
+        if (window.top === window.self) {
+          updateToolWindow(response.items.filter(item => item.domain === domain));
+        }
+      }
     });
-  } else if (text && text.length < 14) {
-    console.log("Text not collected: less than 14 characters long");
   }
 }
 

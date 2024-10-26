@@ -1,17 +1,16 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Web Content Summarizer",
   "version": "1.0",
   "description": "Summarize selected web content",
   "permissions": [
     "activeTab",
     "contextMenus",
-    "storage",
-    "tabs"
+    "storage"
   ],
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -21,7 +20,7 @@
       "all_frames": true
     }
   ],
-  "browser_action": {
+  "action": {
     "default_popup": "popup.html"
   }
 }
