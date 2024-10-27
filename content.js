@@ -1,7 +1,7 @@
 const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE', 'CODE'];
 let currentElement = null;
 let toolWindow = null;
-let isToolWindowVisible = true; // Default to true
+let isToolWindowVisible = false; // Default to false
 const currentDomain = window.location.hostname;
 
 // Add this at the top with other variables
@@ -421,11 +421,11 @@ function createToolWindow() {
 
   const toolWindow = document.createElement('div');
   toolWindow.id = 'summator-tool-window';
-  // Initial visibility based on stored state
-  toolWindow.setAttribute('style', `display: ${isToolWindowVisible ? 'block' : 'none'} !important`);
+  // Set initial display to 'none'
+  toolWindow.setAttribute('style', 'display: none !important');
   
   toolWindow.innerHTML = `
-    <h3>Collector</h3>
+    <h3>Web Content Clipper</h3>
     <ul class="summator-list-container"></ul>
     <div class="summator-button-container">
       <button id="summator-show-all-btn" class="summator-btn">Show All</button>

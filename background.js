@@ -86,4 +86,11 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
+// Add this listener for the extension icon click
+chrome.action.onClicked.addListener((tab) => {
+  chrome.tabs.sendMessage(tab.id, {action: "toggleCollector"}, response => {
+    console.log('Toggle message sent');
+  });
+});
+
 console.log("Background script loaded");

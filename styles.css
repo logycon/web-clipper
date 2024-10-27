@@ -76,6 +76,7 @@
   list-style: none !important;
   border: 1px solid #ccc !important;
   scroll-behavior: smooth !important;
+  font-size: 12px !important; /* Reduce font size for list container */
 }
 
 .summator-list-container::-webkit-scrollbar {
@@ -103,20 +104,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: inherit !important; /* Ensure list items inherit the reduced font size */
 }
 
 .summator-list-container li span {
   flex-grow: 1;
   margin-right: 10px;
+  font-size: inherit !important; /* Ensure span inherits the font size */
 }
 
 /* Default button style (for the remove/X button) */
 #summator-tool-window button {
-  padding: 5px 10px !important;
+  padding: 4px 8px !important; /* Slightly reduce padding */
   border: 1px solid #cc0000 !important;
   background-color: red !important;
   cursor: pointer !important;
-  font-size: 14px !important;
+  font-size: 12px !important; /* Reduce font size */
   color: white !important;
 }
 
@@ -124,10 +127,11 @@
 #summator-tool-window .summator-btn {
   background-color: #4CAF50 !important;
   border: none !important;
-  padding: 8px 12px !important;
+  padding: 6px 10px !important; /* Slightly reduce padding */
   border-radius: 4px !important;
   cursor: pointer !important;
   margin: 0 5px !important;
+  font-size: 12px !important; /* Reduce font size */
 }
 
 #summator-tool-window .summator-btn:hover {
@@ -135,18 +139,18 @@
 }
 
 .summator-remove-btn {
-  padding: 2px 6px !important;
-  margin-left: 8px !important;
+  padding: 2px 4px !important; /* Slightly reduce padding */
+  margin-left: 6px !important;
   background-color: #f44336 !important;
   border: none !important;
-  border-radius: 4px !important;
+  border-radius: 3px !important;
   cursor: pointer !important;
-  font-size: 12px !important;
+  font-size: 10px !important; /* Keep this small for the 'x' */
   color: white !important;
   font-weight: bold !important;
   line-height: 1 !important;
   text-align: center !important;
-  flex-shrink: 0 !important;  /* Prevent button from shrinking */
+  flex-shrink: 0 !important;
 }
 
 .summator-remove-btn:hover {
@@ -183,6 +187,8 @@
   justify-content: space-between !important;
   align-items: center !important;
   width: 100% !important;
+  /* Remove the padding */
+  border-bottom: 1px solid #ddd !important;
 }
 
 .summator-modal h2 {
@@ -207,7 +213,7 @@
   width: 100% !important;
   height: calc(100% - 60px) !important;
   margin-top: 20px !important;
-  padding: 10px !important;
+  padding: 0 10px 10px 10px !important; /* Remove top padding, keep others */
   box-sizing: border-box !important;
   font-family: monospace !important;
   font-size: 14px !important;
@@ -268,13 +274,13 @@
 }
 
 .summator-copy-btn {
-  padding: 6px 12px !important;
+  padding: 4px 8px !important; /* Slightly reduce padding */
   background-color: #4CAF50 !important;
   color: white !important;
   border: none !important;
   border-radius: 4px !important;
   cursor: pointer !important;
-  font-size: 14px !important;
+  font-size: 12px !important; /* Reduce font size */
   transition: background-color 0.2s !important;
 }
 
@@ -327,7 +333,7 @@
 }
 
 .summator-modal .summator-close-btn {
-  padding: 6px 12px !important;
+  padding: 4px 8px !important; /* Slightly reduce padding */
   background-color: #f44336 !important;
   color: white !important;
   border: none !important;
@@ -346,11 +352,22 @@
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  padding: 15px !important;
+  width: 100% !important;
+  /* Remove the padding */
   border-bottom: 1px solid #ddd !important;
 }
 
 .summator-modal-header h2 {
-  margin: 0 !important;
+  margin: 0 0 0 10px !important; /* Add left margin to the title */
   font-size: 20px !important;
+  font-weight: bold !important;
+}
+
+.summator-modal-content .summator-modal-header h2 {
+  font-weight: bold !important;
+  color: black !important; /* Ensure the color is black */
+}
+
+.summator-modal-controls {
+  margin-right: 10px !important; /* Add right margin to the controls */
 }

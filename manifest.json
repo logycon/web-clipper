@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Web Content Summarizer",
+  "name": "Web Content Clipper",
   "version": "1.0",
   "description": "Copy selected web content",
   "permissions": [
@@ -27,7 +27,6 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
