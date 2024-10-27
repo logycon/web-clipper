@@ -18,6 +18,12 @@ build:
 	@for file in $(FILES); do echo "- $$file"; done
 	@echo "Done!"
 
+# Add this new target
+zip-extension: 
+	@echo "Zipping up the CRX file..."
+	@mkdir -p dist
+	@zip -j dist/web-clipper.zip .private/web-clipper.crx
+
 # Show help
 help:
 	@echo "Available commands:"
