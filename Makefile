@@ -36,4 +36,18 @@ clean:
 	@echo "Removing zip file..."
 	@rm -f $(BUILD_DIR)/$(ZIP_NAME)
 
-.PHONY: help build clean
+# New deploy target
+deploy: clean build
+	@echo "Creating zip file..."
+	zip -r web-content-clipper.zip . -x ".*" -x "node_modules/*" -x "package*.json" -x "webpack.config.js" -x "Makefile"
+	
+	@echo "Creating commit..."
+	git add .
+	git commit -m "Deploy: $(shell date +'%Y-%m-%d %H:%M:%S')"
+	
+	@echo "Pushing to repository..."
+	git push
+	
+	@echo "Deployment complete!"
+
+.PHONY: help build clean deploy
