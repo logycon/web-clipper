@@ -8,9 +8,28 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+// Add this near the top of the file, after other initialization code
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "webClipperMenu",
+    title: "Web Clipper",
+    contexts: ["selection"]
+  });
+
+  chrome.contextMenus.create({
+    id: "addClip",
+    parentId: "webClipperMenu",
+    title: "Add clip",
+    contexts: ["selection"]
+  });
+});
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "summarizeSelection") {
     chrome.tabs.sendMessage(tab.id, { action: "summarizeSelection" });
+  }
+  if (info.menuItemId === "addClip") {
+    chrome.tabs.sendMessage(tab.id, { action: "addClip", text: info.selectionText });
   }
 });
 

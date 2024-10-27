@@ -240,6 +240,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (window.top === window.self) {
       updateToolWindow(request.items);
     }
+  } else if (request.action === "addClip") {
+    // New handler for the context menu "Add clip" action
+    handleContextMenuClip(request.text);
   }
 });
 
@@ -762,5 +765,48 @@ function getElementPosition(element) {
   }
 
   return { x, y };
+}
+
+// Add this new function to handle context menu clips
+async function handleContextMenuClip(selectedText) {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const commonAncestor = range.commonAncestorContainer;
+    
+    // Find the closest element that contains the entire selection
+    let container = commonAncestor.nodeType === Node.ELEMENT_NODE ? commonAncestor : commonAncestor.parentElement;
+    while (container && !container.contains(range.startContainer) || !container.contains(range.endContainer)) {
+      container = container.parentElement;
+    }
+
+    if (container) {
+      // Check if the container or its parent is a table, div, or p
+      const relevantElement = container.closest('table, div, p');
+      if (relevantElement) {
+        // Create a new range that only encompasses the selected content
+        const newRange = document.createRange();
+        newRange.setStart(range.startContainer, range.startOffset);
+        newRange.setEnd(range.endContainer, range.endOffset);
+        
+        // Create a temporary element to hold the selected content
+        const tempElement = document.createElement('div');
+        tempElement.appendChild(newRange.cloneContents());
+        
+        // Collect text from the temporary element
+        const collectedText = await collectTextFromElement(tempElement);
+        addToCollection(collectedText, null, getElementPosition(relevantElement));
+      } else {
+        // If no relevant container found, just add the selected text
+        addToCollection(selectedText, null);
+      }
+    } else {
+      // Fallback to just adding the selected text
+      addToCollection(selectedText, null);
+    }
+  } else {
+    // Fallback to just adding the selected text
+    addToCollection(selectedText, null);
+  }
 }
 
