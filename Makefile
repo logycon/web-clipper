@@ -1,35 +1,39 @@
-# Variables
-ZIP_NAME = extension.zip
-FILES = manifest.json content.js background.js popup.html popup.js styles.css
+# Define variables
+BUILD_DIR := dist
+ZIP_NAME := web-clipper.zip
 
 # Default target
-all: clean build
+.DEFAULT_GOAL := help
 
-# Clean existing zip
-clean:
-	@echo "Cleaning..."
-	@rm -f $(ZIP_NAME)
-
-# Build the zip
-build:
-	@echo "Creating $(ZIP_NAME)..."
-	@zip -q $(ZIP_NAME) $(FILES)
-	@echo "Files included in $(ZIP_NAME):"
-	@for file in $(FILES); do echo "- $$file"; done
-	@echo "Done!"
-
-# Add this new target
-zip-extension: 
-	@echo "Zipping up the CRX file..."
-	@mkdir -p dist
-	@zip -j dist/web-clipper.zip .private/web-clipper.crx
-
-# Show help
+# Help target
 help:
 	@echo "Available commands:"
-	@echo "  make       - Clean and build extension.zip"
-	@echo "  make clean - Remove existing extension.zip"
-	@echo "  make build - Create new extension.zip"
-	@echo "  make help  - Show this help message"
+	@echo "  make build  - Build the extension and create zip file"
+	@echo "  make clean  - Remove the zip file"
+	@echo "  make help   - Show this help message"
 
-.PHONY: all clean build help
+# Combined build and zip task
+build:
+	@echo "Building the extension..."
+	# Add your existing build steps here
+	
+	@echo "Creating zip file for Chrome Web Store submission..."
+	@mkdir -p $(BUILD_DIR)
+	@zip -r $(BUILD_DIR)/$(ZIP_NAME) . \
+		-x "*.git*" \
+		-x "$(BUILD_DIR)/*" \
+		-x "node_modules/*" \
+		-x ".private/*" \
+		-x "*.DS_Store" \
+		-x "*.zip" \
+		-x "*.sh" \
+		-x "install.html" \
+		-x "*.crx"
+	@echo "Build complete. Zip file created at $(BUILD_DIR)/$(ZIP_NAME)"
+
+# Clean task
+clean:
+	@echo "Removing zip file..."
+	@rm -f $(BUILD_DIR)/$(ZIP_NAME)
+
+.PHONY: help build clean

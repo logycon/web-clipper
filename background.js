@@ -9,7 +9,6 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  console.log("Context menu clicked", info, tab);
   if (info.menuItemId === "summarizeSelection") {
     chrome.tabs.sendMessage(tab.id, { action: "summarizeSelection" });
   }
@@ -52,7 +51,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function saveCollectedItems() {
   chrome.storage.local.set({collectedItems: collectedItems}, function() {
-    console.log('Collected items saved');
     chrome.tabs.query({}, function(tabs) {
       tabs.forEach(tab => {
         try {
@@ -69,11 +67,11 @@ function saveCollectedItems() {
               items: filteredItems
             }).catch(err => {
               // Ignore errors for tabs that can't receive messages
-              console.log('Error sending message to tab:', err);
+              console.debug('Error sending message to tab:', err);
             });
           }
         } catch (e) {
-          console.log('Invalid URL or chrome internal page:', tab.url);
+          console.debug('Invalid URL or chrome internal page:', tab.url);
         }
       });
     });
@@ -89,8 +87,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // Add this listener for the extension icon click
 chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, {action: "toggleCollector"}, response => {
-    console.log('Toggle message sent');
+    console.debug('Toggle message sent');
   });
 });
 
-console.log("Background script loaded");
+console.debug("Background script loaded");

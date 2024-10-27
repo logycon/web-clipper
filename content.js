@@ -168,7 +168,7 @@ async function selectElementText(element) {
 
     addToCollection(collectedText, element);
   } else if (collectedText && collectedText.length < 14) {
-    console.log("Text not collected: less than 14 characters long");
+    console.debug("Text not collected: less than 14 characters long");
   }
 }
 
@@ -188,7 +188,7 @@ document.addEventListener('dblclick', async (event) => {
   let target = event.target;
 
   if (target.closest('a') !== null) {
-    console.log("Double-click on a link element, not collecting text");
+    console.debug("Double-click on a link element, not collecting text");
     return;
   }
 
@@ -197,7 +197,7 @@ document.addEventListener('dblclick', async (event) => {
   }
 
   if (target && !isWithinExtensionUI(target)) {
-    console.log("Double-click event captured on text-containing element");
+    console.debug("Double-click event captured on text-containing element");
     await selectElementText(target);
   }
 }, true);
@@ -213,7 +213,7 @@ chrome.runtime.sendMessage({
       updateToolWindow(response.items);
     }
   } else {
-    console.log("No items found or error loading items");
+    console.debug("No items found or error loading items");
     if (window.top === window.self) {
       updateToolWindow([]); // Pass empty array to show "No items collected" message
     }
@@ -231,7 +231,7 @@ window.addEventListener('message', function(event) {
 
 // Listen for messages from the extension
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log("Received message:", request);
+  console.debug("Received message:", request);
   if (request.action === "summarizeSelection") {
     handleSummarizeSelection();
   } else if (request.action === "showSummary") {
@@ -244,7 +244,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 document.addEventListener('contextmenu', (event) => {
-  console.log("Right-click event captured");
+  console.debug("Right-click event captured");
   // Don't prevent default, allow context menu to appear
 }, true);
 
@@ -254,10 +254,10 @@ function handleSummarizeSelection() {
     selectedText = currentElement.textContent.trim();
   }
   if (selectedText) {
-    console.log("Selected text:", selectedText);
+    console.debug("Selected text:", selectedText);
     sendMessageToParent({ action: "summarize", text: selectedText });
   } else {
-    console.log("No text selected and no element highlighted");
+    console.debug("No text selected and no element highlighted");
   }
 }
 
@@ -290,9 +290,9 @@ function showSummaryPopup(summary) {
 }
 
 function highlightElement(element) {
-  console.log("Selecting element:", element);
+  console.debug("Selecting element:", element);
   if (currentElement) {
-    console.log("Removing selection from previous element");
+    console.debug("Removing selection from previous element");
     // Remove this line to prevent visual changes:
     // currentElement.classList.remove('summator-highlight');
   }
@@ -305,7 +305,7 @@ function highlightElement(element) {
   
   // Log the selected element's text content
   const text = currentElement.textContent.trim();
-  console.log("Text content of selected element:", text);
+  console.debug("Text content of selected element:", text);
 }
 
 function collectTableText(table) {
@@ -446,7 +446,7 @@ function summarizeCollectedText() {
       const text = response.texts.join('\n\n');
       sendMessageToParent({ action: "summarize", text: text });
     } else {
-      console.log("No text collected for summarization");
+      console.debug("No text collected for summarization");
     }
   });
 }
@@ -504,8 +504,6 @@ if (window.top === window.self) {
     }
   });
 }
-
-console.log("Content script loaded");
 
 function isWithinExtensionUI(element) {
   if (!element || !element.closest) {
@@ -716,7 +714,7 @@ document.addEventListener('dblclick', async (event) => {
   let target = event.target;
 
   if (target.closest('a') !== null) {
-    console.log("Double-click on a link element, not collecting text");
+    console.debug("Double-click on a link element, not collecting text");
     return;
   }
 
@@ -725,7 +723,6 @@ document.addEventListener('dblclick', async (event) => {
   }
 
   if (target && !isWithinExtensionUI(target)) {
-    console.log("Double-click event captured on text-containing element");
     await selectElementText(target);
   }
 }, true);
