@@ -22,6 +22,19 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Add clip",
     contexts: ["selection"]
   });
+
+  // Add new context menu for iframes
+  chrome.contextMenus.create({
+    id: "openIframe",
+    title: "Open iframe in new tab",
+    contexts: ["frame"]  // This makes it only appear on iframes
+  });
+
+  chrome.contextMenus.create({
+    id: "openIframeWindow",
+    title: "Open iframe in new window",
+    contexts: ["frame"]
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -30,6 +43,21 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
   if (info.menuItemId === "addClip") {
     chrome.tabs.sendMessage(tab.id, { action: "addClip", text: info.selectionText });
+  }
+  if (info.menuItemId === "openIframe") {
+    // Open iframe URL in new tab
+    if (info.frameUrl) {
+      chrome.tabs.create({ url: info.frameUrl });
+    }
+  }
+  if (info.menuItemId === "openIframeWindow") {
+    if (info.frameUrl) {
+      chrome.windows.create({ 
+        url: info.frameUrl,
+        width: 1024,
+        height: 768
+      });
+    }
   }
 });
 
@@ -96,6 +124,9 @@ function saveCollectedItems() {
     });
   });
 }
+
+// Add this near the top of the file with other initialization code
+let toolWindowTabId = null;
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabId === toolWindowTabId) {
