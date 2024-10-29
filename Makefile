@@ -28,7 +28,8 @@ build:
 		-x "*.zip" \
 		-x "*.sh" \
 		-x "install.html" \
-		-x "*.crx"
+		-x "*.crx" \
+		-x "Makefile"
 	@echo "Build complete. Zip file created at $(BUILD_DIR)/$(ZIP_NAME)"
 
 # Clean task
